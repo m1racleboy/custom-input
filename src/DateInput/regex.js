@@ -191,8 +191,8 @@ export default class MultiRegExp2 {
     if (!matches) return matches;
     const firstIndex = matches.index;
 
-    const mapped = group == 0 ? 0 : this.groupIndexMapper[group];
-    const previousGroups = group == 0 ? [] : this.previousGroupsForGroup[group];
+    const mapped = group === 0 ? 0 : this.groupIndexMapper[group];
+    const previousGroups = group === 0 ? [] : this.previousGroupsForGroup[group];
     let r = {
       match: matches[mapped],
       start: 0,
