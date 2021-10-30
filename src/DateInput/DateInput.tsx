@@ -2,15 +2,28 @@ import React, { FC, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
 import MultiRegExp2 from './regex';
 import { Position } from './types';
-import { dateFormat, DateTypes, KeyCodes } from '../const';
+import { mainDateFormat, DateTypes, KeyCodes, dateFormats } from '../const';
 
 const DateInput: FC = () => {
 	const dateRef: any = useRef(null);
 	let date = dayjs();
-	let dateString = date.format(dateFormat);
+	let dateString = date.format(mainDateFormat);
 	let datePositions = new MultiRegExp2(/(\d+)\/(\w+)\/(\d+) (\d+):(\d+):(\d+)/gi).execForAllGroups(dateString);
 
 	const updatePositions = () => datePositions = new MultiRegExp2(/(\d+)\/(\w+)\/(\d+) (\d+):(\d+):(\d+)/gi).execForAllGroups(dateString);
+
+  const changeCurrentDateValue = (position: Position) => {
+    dateString = date.format(mainDateFormat);
+		dateRef.current.value = dateString;
+		updatePositions();
+
+		if (!datePositions) {
+			throw new Error('Positions is null');
+		}
+
+		const newPosition = datePositions[position.index];
+		dateRef.current.setSelectionRange(newPosition.start, newPosition.end);
+  }
 
 	useEffect(() => {
 		dateRef.current.value = dateString;
@@ -33,7 +46,7 @@ const DateInput: FC = () => {
 		return null;
 	};
 
-	const increment = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const incrementDateHandler = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		e.preventDefault();
 		const position = getPosition(dateRef.current.selectionStart) ?? (() => { throw new Error("Position is null") })();
 
@@ -82,19 +95,10 @@ const DateInput: FC = () => {
 			}
 		}
 
-		dateString = date.format(dateFormat);
-		dateRef.current.value = dateString;
-		updatePositions();
-
-		if (!datePositions) {
-			throw new Error('Positions is null');
-		}
-
-		const newPosition = datePositions[position.index];
-		dateRef.current.setSelectionRange(newPosition.start, newPosition.end);
+    changeCurrentDateValue(position);
 	};
 
-	const decrement = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const decrementDateHandler = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		e.preventDefault();
 		const position = getPosition(dateRef.current.selectionStart)  ?? (() => { throw new Error("Position is null") })();
 
@@ -143,24 +147,18 @@ const DateInput: FC = () => {
 			}
 		}
 
-		dateString = date.format(dateFormat);
-		dateRef.current.value = dateString;
-		updatePositions();
-
-		if (!datePositions) {
-			throw new Error('Positions is null');
-		}
-
-		const newPosition = datePositions[position.index];
-		dateRef.current.setSelectionRange(newPosition.start, newPosition.end);
+		changeCurrentDateValue(position);
 	};
 
-	const enter = () => {
+	const enterDateHandler = () => {
 		let customParseFormat = require('dayjs/plugin/customParseFormat');
 		dayjs.extend(customParseFormat);
-		date = dayjs(dateRef.current.value, 'DD MM YYYY');
-		dateString = date.format(dateFormat);
-		updatePositions();
+		date = dayjs(dateRef.current.value, dateFormats, true);
+		dateString = date.format(mainDateFormat);
+    if (dateString === 'Invalid Date') {
+      date = dayjs();
+      dateString = date.format(mainDateFormat);
+    }
 		dateRef.current.value = dateString;
 	};
 
@@ -170,9 +168,9 @@ const DateInput: FC = () => {
 				type="text"
 				ref={dateRef}
 				onKeyDown={(e) => {
-					e.code === KeyCodes.ARROW_UP && increment(e);
-					e.code === KeyCodes.ARROW_DOWN && decrement(e);
-					e.code === KeyCodes.ENTER && enter();
+					e.code === KeyCodes.ARROW_UP && incrementDateHandler(e);
+					e.code === KeyCodes.ARROW_DOWN && decrementDateHandler(e);
+					e.code === KeyCodes.ENTER && enterDateHandler();
 				}}
 			/>
 	);
